@@ -5,6 +5,7 @@ beautifulsoup4
 moviepy
 edge-tts
 openai
+httpx
 python-multipart
 python-dotenv
 requests

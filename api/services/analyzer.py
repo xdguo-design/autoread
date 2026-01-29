@@ -1,4 +1,6 @@
 import os
+import httpx
+import json
 from openai import AsyncOpenAI
 
 class AnalyzerService:
@@ -11,6 +13,9 @@ class AnalyzerService:
         base_url = (llm.get("base_url") or self.default_base_url).strip()
         model = (llm.get("model") or self.default_model).strip()
         api_key = (llm.get("api_key") or os.getenv("OPENAI_API_KEY") or "").strip()
+
+        # Check if using GLM models (support thinking parameter)
+        is_glm_model = model.startswith("glm-") or "bigmodel.cn" in base_url
 
         # Simple language detection (checking for Chinese characters)
         is_chinese = any('\u4e00' <= char <= '\u9fff' for char in text[:1000])
@@ -59,24 +64,60 @@ class AnalyzerService:
                     {"enabled": False, "base_url": base_url, "model": model}
                 )
 
-            client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-            system_msg = "你是一个专门负责网页内容摘要的助手。" if is_chinese else "You are a helpful assistant that summarizes web content."
-            
             # Adjust max_tokens based on word count (approx 2 tokens per word for safety)
             max_tokens = max(2000, word_count * 2)
             
-            response = await client.chat.completions.create(
-                model=model,
-                messages=[
-                    {"role": "system", "content": system_msg},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=max_tokens
-            )
-            return response.choices[0].message.content, {"enabled": True, "base_url": base_url, "model": model}
+            if is_glm_model:
+                # Use httpx directly to support GLM's thinking parameter
+                return await self._call_glm_with_thinking(base_url, api_key, model, prompt, is_chinese, max_tokens)
+            else:
+                # Use standard OpenAI SDK
+                client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+                system_msg = "你是一个专门负责网页内容摘要的助手。" if is_chinese else "You are a helpful assistant that summarizes web content."
+                
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {"role": "system", "content": system_msg},
+                        {"role": "user", "content": prompt}
+                    ],
+                    max_tokens=max_tokens
+                )
+                return response.choices[0].message.content, {"enabled": True, "base_url": base_url, "model": model}
         except Exception as e:
             print(f"AI Analysis failed: {e}")
             return (
                 f"AI Analysis failed. Original text preview: {text[:500]}...",
                 {"enabled": False, "base_url": base_url, "model": model, "error": str(e)}
             )
+    
+    async def _call_glm_with_thinking(self, base_url: str, api_key: str, model: str, prompt: str, is_chinese: bool, max_tokens: int):
+        """Call GLM API with thinking parameter using httpx"""
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            url = f"{base_url.rstrip('/')}/chat/completions"
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            system_msg = "你是一个专门负责网页内容摘要的助手。" if is_chinese else "You are a helpful assistant that summarizes web content."
+            
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": prompt}
+                ],
+                "thinking": {
+                    "type": "enabled"
+                },
+                "max_tokens": max_tokens,
+                "temperature": 1.0
+            }
+            
+            response = await client.post(url, headers=headers, json=payload)
+            response.raise_for_status()
+            
+            result = response.json()
+            content = result["choices"][0]["message"]["content"]
+            return content, {"enabled": True, "base_url": base_url, "model": model, "thinking": "enabled"}
