@@ -308,7 +308,11 @@ export default function Home() {
                         <option value="deepseek-chat">DeepSeek Chat</option>
                         <option value="deepseek-reasoner">DeepSeek Reasoner</option>
                         <option value="glm-4">GLM-4</option>
+                        <option value="glm-4-0520">GLM-4-0520</option>
+                        <option value="glm-4-air">GLM-4-Air</option>
+                        <option value="glm-4-plus">GLM-4-Plus</option>
                         <option value="glm-4-flash">GLM-4-Flash</option>
+                        <option value="glm-4-flashx">GLM-4-FlashX</option>
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                       </select>
