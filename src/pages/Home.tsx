@@ -313,6 +313,7 @@ export default function Home() {
                         <option value="glm-4-plus">GLM-4-Plus</option>
                         <option value="glm-4-flash">GLM-4-Flash</option>
                         <option value="glm-4-flashx">GLM-4-FlashX</option>
+                        <option value="glm-4.7">GLM-4.7</option>
                         <option value="gpt-4o">GPT-4o</option>
                         <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
                       </select>
