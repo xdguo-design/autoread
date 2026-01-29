@@ -1,0 +1,12 @@
+fastapi
+uvicorn
+playwright
+beautifulsoup4
+moviepy
+edge-tts
+openai
+python-multipart
+python-dotenv
+requests
+lxml
+aiofiles

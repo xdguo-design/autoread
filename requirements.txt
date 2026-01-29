@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+pydantic
+python-dotenv
+playwright
+beautifulsoup4
+requests
+openai
+edge-tts
+moviepy
